@@ -1,18 +1,31 @@
-// Initial Balance
 let currentBalance = 0;
 
-// Select HTML Elements
+let transactions = [];
+
 const balanceDisplay = document.getElementById("balance-display");
 const amountInput = document.getElementById("amount-input");
 const descInput = document.getElementById("desc-input");
 const list = document.getElementById("transaction-list");
 
+window.onload = function () {
+  if (localStorage.getItem("myWalletData")) {
+    const saveData = JSON.parse(localStorage.getItem("myWalletData"));
+
+    currentBalance = saveData.balance;
+    transactions = saveData.list;
+
+    updateScreen();
+
+    transactions.forEach(function (item) {
+      addToListHTML(item.description, item.amount, item.type);
+    });
+  }
+};
+
 function addTransaction(type) {
-  // 1. Get Values
   const amount = parseFloat(amountInput.value);
   const description = descInput.value;
 
-  // 2. Validation (Check if empty)
   if (isNaN(amount) || amount <= 0) {
     alert("Please enter a valid amount!");
     return;
@@ -21,38 +34,47 @@ function addTransaction(type) {
     alert("Please enter a description!");
     return;
   }
-
-  // 3. Calculation Logic
   if (type === "income") {
     currentBalance += amount;
   } else {
-    // Check for sufficient funds
     if (amount > currentBalance) {
-      alert("Insufficient Funds! You cannot spend more than you have.");
+      alert("Insufficent Funds!");
       return;
     }
     currentBalance -= amount;
   }
+  const newTransaction = {
+    description: description,
+    amount: amount,
+    type: type,
+  };
+  transactions.push(newTransaction);
 
-  // 4. Update Display
+  saveData();
+  updateScreen();
+  addToListHTML(description, amount, type);
+
+  amountInput.value = "";
+  descInput.value = "";
+}
+function updateScreen() {
   balanceDisplay.innerText = "$" + currentBalance.toFixed(2);
-
-  // 5. Add to List (DOM Manipulation)
+}
+function saveData() {
+  const dataToSave = {
+    balance: currentBalance,
+    list: transactions,
+  };
+  localStorage.setItem("myWalletData", JSON.stringify(dataToSave));
+}
+function addToListHTML(description, amount, type) {
   const li = document.createElement("li");
-
-  // Set color based on type
   const colorClass = type === "income" ? "income-text" : "expense-text";
   const sign = type === "income" ? "+" : "-";
 
   li.innerHTML = `
-        <span>${description}</span>
-        <span class="${colorClass}">${sign}$${amount}</span>
-    `;
-
-  // Add to the top of the list
+  <span>${description}</span>
+  <span class="${colorClass}">${sign}$${amount}</span>
+  `;
   list.prepend(li);
-
-  // 6. Clear Inputs
-  amountInput.value = "";
-  descInput.value = "";
 }
